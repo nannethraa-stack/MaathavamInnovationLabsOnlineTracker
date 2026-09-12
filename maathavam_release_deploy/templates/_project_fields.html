@@ -1,0 +1,29 @@
+
+<div class="form-grid">
+  <label>Project Name<input name="project_name" value="{{ project['project_name'] if project else '' }}" required></label>
+  <label>Domain<input name="domain" value="{{ project['domain'] if project else '' }}"></label>
+  <label>Provisional Patent Filed Status
+    <select name="provisional_patent_status">
+      {% set val = project['provisional_patent_status'] if project else 'Not Filed' %}
+      {% for x in ['Not Filed','Provisional Patent Filed','Patented','Pending'] %}
+      <option {{ 'selected' if val==x else '' }}>{{ x }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Sensor Y/N
+    {% set val = project['sensor'] if project else 'N' %}
+    <select name="sensor"><option {{ 'selected' if val=='Y' else '' }}>Y</option><option {{ 'selected' if val=='N' else '' }}>N</option></select>
+  </label>
+  <label>Planned Organisation for POC<input name="planned_organisation" value="{{ project['planned_organisation'] if project else '' }}"></label>
+  <label>Status
+    {% set val = project['status'] if project else 'Planned' %}
+    <select name="status">
+      {% for x in ['Planned','In Progress','POC','Validation','Blocked','Completed','On Hold'] %}
+      <option {{ 'selected' if val==x else '' }}>{{ x }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>ETA<input type="date" name="eta" value="{{ project['eta'] if project else '' }}"></label>
+  <label>Total Spend (₹)<input type="number" step="0.01" min="0" name="total_spend" value="{{ project['total_spend'] if project else 0 }}"></label>
+</div>
+<label>Comments<textarea name="comments">{{ project['comments'] if project else '' }}</textarea></label>

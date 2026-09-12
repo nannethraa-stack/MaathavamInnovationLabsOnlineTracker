@@ -1,0 +1,9 @@
+uploads/imported/*
+!uploads/imported/.gitkeep
+
+# Production data
+project_dashboard.db
+project_dashboard.db.*
+uploads/
+__pycache__/
+*.pyc

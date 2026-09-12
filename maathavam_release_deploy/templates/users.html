@@ -1,0 +1,17 @@
+
+{% extends "base.html" %}
+{% block title %}User Administration{% endblock %}
+{% block content %}
+<div class="page-head"><a href="{{ url_for('dashboard') }}">← Dashboard</a><h1>User Administration</h1></div>
+<section class="panel">
+<form method="post" class="inline-form">
+<input name="username" placeholder="Username" required>
+<input name="password" type="password" placeholder="Temporary password" required>
+<select name="role"><option>viewer</option><option>editor</option><option>admin</option></select>
+<button class="btn primary">Create User</button>
+</form>
+</section>
+<section class="panel table-wrap"><table><thead><tr><th>Username</th><th>Role</th><th>Created</th></tr></thead><tbody>
+{% for u in users %}<tr><td>{{u['username']}}</td><td>{{u['role']}}</td><td>{{u['created_at']}}</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

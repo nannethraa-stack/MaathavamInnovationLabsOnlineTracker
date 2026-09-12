@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Executive Dashboard · Maathavam Innovation Labs{% endblock %}
+{% block content %}
+<section class="hero">
+  <div><div class="eyebrow">EXECUTIVE DASHBOARD</div><h1>Deep-Tech Concept Portfolio</h1><p>One executive view for concepts, artifacts, patent progression, POC readiness, commentary and investment.</p></div>
+  {% if current_role in ['admin','editor'] %}<a class="btn primary" href="{{ url_for('new_project') }}">+ New Concept</a>{% endif %}
+</section>
+<section class="summary-grid">
+  <div class="metric"><span>Total Concepts</span><strong>{{ summary['concepts'] }}</strong></div>
+  <div class="metric"><span>Total Artifacts</span><strong>{{ summary['artifacts'] }}</strong></div>
+  <div class="metric"><span>Patented / Filed</span><strong>{{ summary['patented_or_filed'] }}</strong></div>
+  <div class="metric"><span>Total Spend</span><strong>₹{{ "{:,.2f}".format(summary['total_spend'] or 0) }}</strong></div>
+</section>
+<section class="exec-grid">
+  <div class="panel"><h2>Portfolio health</h2><div class="health-list">
+    {% set total = summary['concepts'] or 1 %}
+    <div><span>Patent / filed coverage</span><b>{{ ((summary['patented_or_filed'] / total) * 100)|round(0) }}%</b></div>
+    <div class="bar"><i style="width:{{ ((summary['patented_or_filed'] / total) * 100) }}%"></i></div>
+    <div><span>Concepts without artifacts</span><b>{{ projects|selectattr('artifact_count','equalto',0)|list|length }}</b></div>
+  </div></div>
+  <div class="panel"><h2>Current status mix</h2><div class="status-cards">
+    {% for s in ['Planned','In Progress','POC','Validation','Blocked','Completed','On Hold'] %}{% set count=projects|selectattr('status','equalto',s)|list|length %}<div><strong>{{ count }}</strong><span>{{ s }}</span></div>{% endfor %}
+  </div></div>
+</section>
+<section class="panel">
+  <div class="panel-head"><div><h2>Concept Portfolio</h2><p>Project field is sortable; artifact counts are live from the database.</p></div><input id="search" class="search" placeholder="Search concepts, domains, status..." oninput="filterRows()"></div>
+  <div class="sort-tools"><span>Project:</span><button class="sort-btn {% if sort=='project' and direction=='asc' %}active{% endif %}" onclick="sortProjects('asc')">A → Z</button><button class="sort-btn {% if sort=='project' and direction=='desc' %}active{% endif %}" onclick="sortProjects('desc')">Z → A</button></div>
+  <div class="table-wrap"><table id="projectTable"><thead><tr>
+    <th>Project <span class="sort-arrows"><button onclick="sortProjects('asc')" title="Ascending">▲</button><button onclick="sortProjects('desc')" title="Descending">▼</button></span></th>
+    <th>Domain</th><th>Patent Status</th><th>Sensor</th><th>Planned Organisation for POC</th><th>Status</th><th>ETA</th><th>Artifacts</th><th>Latest Comment</th><th>Total Spend</th>
+  </tr></thead><tbody>
+  {% for p in projects %}<tr class="data-row" onclick="location.href='{{ url_for('project', project_id=p['id']) }}'">
+    <td><strong>#{{ p['id'] }} · {{ p['project_name'] }}</strong></td><td>{{ p['domain'] }}</td><td><span class="badge">{{ p['provisional_patent_status'] }}</span></td><td>{{ p['sensor'] }}</td><td>{{ p['planned_organisation'] }}</td><td><span class="status {{ p['status']|lower|replace(' ','-') }}">{{ p['status'] }}</span></td><td>{{ p['eta'] }}</td><td><span class="artifact-count">{{ p['artifact_count'] }}</span></td>
+    <td><div>{{ p['latest_comment'] or p['comments'] or '—' }}</div>{% if p['latest_comment_at'] %}<small>{{ p['latest_comment_at']|replace('T',' ') }} UTC</small>{% endif %}</td><td>₹{{ "{:,.2f}".format(p['total_spend'] or 0) }}</td>
+  </tr>{% else %}<tr><td colspan="10" class="empty">No concepts yet. Create the first concept.</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}
