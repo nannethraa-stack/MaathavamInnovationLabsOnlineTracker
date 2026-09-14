@@ -98,8 +98,29 @@ def init_db():
         created_at TEXT NOT NULL,
         FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE
     );
+
+    CREATE TABLE IF NOT EXISTS company_expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        expense_date TEXT NOT NULL,
+        category TEXT NOT NULL DEFAULT '',
+        description TEXT NOT NULL DEFAULT '',
+        amount REAL NOT NULL DEFAULT 0,
+        paid_by TEXT NOT NULL DEFAULT '',
+        payment_method TEXT NOT NULL DEFAULT '',
+        vendor TEXT NOT NULL DEFAULT '',
+        notes TEXT NOT NULL DEFAULT '',
+        receipt_path TEXT,
+        created_by INTEGER,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(created_by) REFERENCES users(id) ON DELETE SET NULL
+    );
     """)
     # Backfill/migrate older databases safely.
+    project_columns = {row[1] for row in conn.execute("PRAGMA table_info(projects)").fetchall()}
+    if "priority" not in project_columns:
+        conn.execute("ALTER TABLE projects ADD COLUMN priority TEXT NOT NULL DEFAULT 'No'")
+
     columns = {row[1] for row in conn.execute("PRAGMA table_info(artifacts)").fetchall()}
     for column, definition in (("original_path", "TEXT"), ("file_size", "INTEGER NOT NULL DEFAULT 0"), ("sha256", "TEXT")):
         if column not in columns:
@@ -264,6 +285,7 @@ def import_projects():
             "ETA": "eta",
             "Comments": "comments",
             "Total Spend": "total_spend",
+            "Priority": "priority",
         }
         for raw in records:
             row = {}
@@ -280,13 +302,14 @@ def import_projects():
                 continue
             conn.execute("""
                 INSERT INTO projects(project_name,domain,provisional_patent_status,sensor,
-                planned_organisation,status,eta,comments,total_spend,created_at,updated_at)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?)
+                planned_organisation,status,eta,comments,total_spend,priority,created_at,updated_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             """, (
                 row.get("project_name",""), row.get("domain",""),
                 row.get("provisional_patent_status","Not Filed"), row.get("sensor","N"),
                 row.get("planned_organisation",""), row.get("status","Planned") if row.get("status","Planned") in ("Planned","In Progress","POC","Validation","Blocked","Completed","On Hold") else "Planned",
-                row.get("eta",""), row.get("comments",""), spend, ts, ts
+                row.get("eta",""), row.get("comments",""), spend,
+                row.get("priority","No") if row.get("priority","No") in ("Yes","No") else "No", ts, ts
             ))
             count += 1
         audit(conn, "IMPORT", "project", None, f"Imported {count} projects from {file.filename}")
@@ -305,6 +328,7 @@ def dashboard():
         "project": "p.project_name COLLATE NOCASE",
         "domain": "p.domain COLLATE NOCASE",
         "status": "p.status COLLATE NOCASE",
+        "priority": "CASE WHEN p.priority = 'Yes' THEN 0 ELSE 1 END",
         "artifacts": "artifact_count",
         "updated": "p.updated_at",
     }
@@ -346,9 +370,9 @@ def new_project():
         cur = conn.execute("""
             INSERT INTO projects
             (project_name, domain, provisional_patent_status, sensor,
-             planned_organisation, status, eta, comments, total_spend,
+             planned_organisation, status, eta, comments, total_spend, priority,
              created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (*fields, ts, ts))
         project_id = cur.lastrowid
 
@@ -385,7 +409,7 @@ def project(project_id):
                 UPDATE projects SET
                     project_name=?, domain=?, provisional_patent_status=?,
                     sensor=?, planned_organisation=?, status=?, eta=?,
-                    comments=?, total_spend=?, updated_at=?
+                    comments=?, total_spend=?, priority=?, updated_at=?
                 WHERE id=?
             """, (*fields, ts, project_id))
             audit(conn, "UPDATE", "project", project_id, "Project details updated")
@@ -521,6 +545,82 @@ def add_artifact(project_id):
     return redirect(url_for("project", project_id=project_id))
 
 
+@app.route("/expenses", methods=["GET", "POST"])
+def company_expenses():
+    conn = db()
+    if request.method == "POST":
+        if not require_role("admin", "editor"):
+            conn.close()
+            return "Forbidden", 403
+        expense_date = request.form.get("expense_date") or now_iso()[:10]
+        category = request.form.get("category", "").strip()
+        description = request.form.get("description", "").strip()
+        try:
+            amount = float(request.form.get("amount", "0") or 0)
+        except ValueError:
+            amount = 0
+        paid_by = request.form.get("paid_by", "").strip()
+        payment_method = request.form.get("payment_method", "").strip()
+        vendor = request.form.get("vendor", "").strip()
+        notes = request.form.get("notes", "").strip()
+        receipt = request.files.get("receipt")
+        receipt_path = None
+        if receipt and receipt.filename:
+            from werkzeug.utils import secure_filename
+            safe = secure_filename(receipt.filename) or "receipt"
+            stamp = datetime.now().strftime("%Y%m%d%H%M%S%f")
+            expense_dir = UPLOAD_DIR / "expenses"
+            expense_dir.mkdir(parents=True, exist_ok=True)
+            target = expense_dir / f"{stamp}_{safe}"
+            receipt.save(target)
+            receipt_path = f"uploads/expenses/{target.name}"
+        ts = now_iso()
+        cur = conn.execute("""
+            INSERT INTO company_expenses
+            (expense_date, category, description, amount, paid_by, payment_method, vendor, notes, receipt_path, created_by, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (expense_date, category, description, amount, paid_by, payment_method, vendor, notes, receipt_path, session.get("user_id"), ts, ts))
+        audit(conn, "CREATE", "company_expense", cur.lastrowid, f"₹{amount:.2f} {category}")
+        conn.commit()
+        conn.close()
+        flash("Company expense added.")
+        return redirect(url_for("company_expenses"))
+
+    rows = conn.execute("""
+        SELECT e.*, COALESCE(u.username, 'system') AS created_by_name
+        FROM company_expenses e LEFT JOIN users u ON u.id=e.created_by
+        ORDER BY e.expense_date DESC, e.id DESC
+    """).fetchall()
+    summary = conn.execute("""
+        SELECT COUNT(*) AS count, COALESCE(SUM(amount),0) AS total,
+               COALESCE(SUM(CASE WHEN expense_date >= date('now','start of month') THEN amount ELSE 0 END),0) AS month_total
+        FROM company_expenses
+    """).fetchone()
+    conn.close()
+    return render_template("expenses.html", expenses=rows, summary=summary)
+
+
+@app.route("/expenses/<int:expense_id>/delete", methods=["POST"])
+def delete_company_expense(expense_id):
+    if not require_role("admin", "editor"):
+        return "Forbidden", 403
+    conn = db()
+    row = conn.execute("SELECT * FROM company_expenses WHERE id=?", (expense_id,)).fetchone()
+    if not row:
+        conn.close()
+        return "Expense not found", 404
+    if row["receipt_path"]:
+        stored = (BASE_DIR / row["receipt_path"]).resolve()
+        if UPLOAD_DIR.resolve() in stored.parents and stored.exists():
+            stored.unlink()
+    conn.execute("DELETE FROM company_expenses WHERE id=?", (expense_id,))
+    audit(conn, "DELETE", "company_expense", expense_id, row["description"][:200])
+    conn.commit()
+    conn.close()
+    flash("Company expense deleted.")
+    return redirect(url_for("company_expenses"))
+
+
 @app.route("/uploads/<path:filename>")
 def uploaded_file(filename):
     from flask import send_from_directory
@@ -538,10 +638,13 @@ def project_fields(req):
         req.form.get("eta", "").strip(),
         req.form.get("comments", "").strip(),
         float(req.form.get("total_spend", "0") or 0),
+        req.form.get("priority", "No").strip() if req.form.get("priority", "No").strip() in ("Yes", "No") else "No",
     )
 
 
+# Ensure schema migrations run when the app is loaded by Waitress/systemd.
+init_db()
+bootstrap_admin()
+
 if __name__ == "__main__":
-    init_db()
-    bootstrap_admin()
     app.run(host="127.0.0.1", port=5000, debug=True)

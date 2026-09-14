@@ -1,0 +1,13 @@
+
+{% extends "base.html" %}
+{% block title %}Import Projects{% endblock %}
+{% block content %}
+<div class="page-head"><a href="{{ url_for('dashboard') }}">← Dashboard</a><h1>Import Project Portfolio</h1></div>
+<section class="panel">
+<p>Upload a CSV or XLSX using your columns: Project Name, Domain, Provisonal Patent Filed Status, sensor Y/N, Planned Organsiation for POC, Status, ETA, Comments, Total Spend.</p>
+<form method="post" enctype="multipart/form-data">
+<input type="file" name="file" accept=".csv,.xlsx" required>
+<br><br><button class="btn primary">Import Projects</button>
+</form>
+</section>
+{% endblock %}

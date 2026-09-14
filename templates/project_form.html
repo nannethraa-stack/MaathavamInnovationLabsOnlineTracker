@@ -1,0 +1,16 @@
+
+{% extends "base.html" %}
+{% block title %}New Concept{% endblock %}
+{% block content %}
+<div class="page-head">
+  <a href="{{ url_for('dashboard') }}">← Dashboard</a>
+  <h1>Create Concept</h1>
+</div>
+<section class="panel form-panel">
+<form method="post">
+  {% include "_project_fields.html" %}
+  <label>Initial Comment<textarea name="initial_comment" placeholder="Optional initial comment"></textarea></label>
+  <button class="btn primary" type="submit">Create Concept</button>
+</form>
+</section>
+{% endblock %}

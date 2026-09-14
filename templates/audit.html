@@ -1,0 +1,9 @@
+
+{% extends "base.html" %}
+{% block title %}Audit History{% endblock %}
+{% block content %}
+<div class="page-head"><a href="{{ url_for('dashboard') }}">← Dashboard</a><h1>Audit History</h1></div>
+<section class="panel table-wrap"><table><thead><tr><th>Timestamp</th><th>User</th><th>Action</th><th>Entity</th><th>ID</th><th>Details</th></tr></thead><tbody>
+{% for r in rows %}<tr><td>{{r['created_at']}}</td><td>{{r['username']}}</td><td>{{r['action']}}</td><td>{{r['entity_type']}}</td><td>{{r['entity_id'] or '—'}}</td><td>{{r['details']}}</td></tr>{% else %}<tr><td colspan="6" class="empty">No audit events.</td></tr>{% endfor %}
+</tbody></table></section>
+{% endblock %}

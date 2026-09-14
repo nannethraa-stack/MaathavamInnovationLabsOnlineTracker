@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}Project Dashboard{% endblock %}</title>
+<link rel="icon" href="{{ url_for('static', filename='maathavam-mark.png') }}" type="image/png">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header>
+  <a class="brand" href="{{ url_for('dashboard') }}" aria-label="Maathavam Innovation Labs home">
+    <img class="brand-mark-img" src="{{ url_for('static', filename='maathavam-mark.png') }}" alt="">
+    <span class="brand-copy"><strong>MAATHAVAM</strong><small>INNOVATION LABS</small></span>
+  </a>
+<nav>
+{% if current_username %}<a href="{{ url_for('dashboard') }}">Dashboard</a>
+<a href="{{ url_for('company_expenses') }}">Company Expenses</a>{% if current_role in ['admin','editor'] %}<a href="{{ url_for('import_projects') }}">Import</a>{% endif %}
+{% if current_role == 'admin' %}<a href="{{ url_for('audit_page') }}">Audit</a><a href="{{ url_for('users') }}">Users</a>{% endif %}
+<a href="{{ url_for('logout') }}">Sign out ({{ current_username }})</a>{% endif %}
+</nav></header>
+<main>
+{% with messages = get_flashed_messages() %}{% if messages %}<div class="flash">{{ messages[-1] }}</div>{% endif %}{% endwith %}
+{% block content %}{% endblock %}
+</main>
+<footer>Maathavam Innovation Labs · Deep-Tech Concept Portfolio · SQLite</footer>
+<script>
+function filterRows() {
+  const q=(document.getElementById('search')?.value || '').toLowerCase();
+  document.querySelectorAll('#projectTable tbody tr.data-row').forEach(r=>{r.style.display=r.innerText.toLowerCase().includes(q)?'':'none';});
+}
+function sortProjects(direction) {
+  const url=new URL(window.location.href);
+  url.searchParams.set('sort','project'); url.searchParams.set('direction',direction);
+  window.location.href=url.toString();
+}
+function sortPriority(direction) {
+  const url=new URL(window.location.href);
+  url.searchParams.set('sort','priority'); url.searchParams.set('direction',direction);
+  window.location.href=url.toString();
+}
+</script>
+</body></html>

@@ -1,0 +1,16 @@
+
+{% extends "base.html" %}
+{% block title %}Sign In{% endblock %}
+{% block content %}
+<section class="login-card">
+  <img class="login-logo" src="{{ url_for('static', filename='maathavam-logo.png') }}" alt="Maathavam Innovation Labs">
+  <h1>Concept Portfolio</h1>
+  <p>Sign in to access the project and IP portfolio.</p>
+  <form method="post">
+    <label>Username<input name="username" required autofocus></label>
+    <label>Password<input type="password" name="password" required></label>
+    <button class="btn primary">Sign In</button>
+  </form>
+  <small>Initial local administrator: <b>admin</b> / <b>admin123</b>. Change this before deployment.</small>
+</section>
+{% endblock %}
