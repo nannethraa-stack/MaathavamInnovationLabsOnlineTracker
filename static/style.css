@@ -8,3 +8,79 @@ nav{display:flex;gap:18px;align-items:center;flex-wrap:wrap}nav a{color:#d9e2ec;
 @media(max-width:600px){.brand{min-width:0}.brand-mark-img{width:42px;height:42px}.brand-copy strong{font-size:16px}.brand-copy small{font-size:7px;letter-spacing:.18em}}
 
 .priority{display:inline-block;padding:4px 9px;border-radius:999px;font-size:11px;font-weight:800}.priority.yes{background:#e7f6ed;color:#12633c}.priority.no{background:#eef2f6;color:#64748b}
+
+/* ============================================================
+   DASHBOARD PAGINATION
+   ============================================================ */
+
+.pagination{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  margin-top:18px;
+  padding:14px 2px 2px;
+  border-top:1px solid var(--line);
+}
+
+.pagination-info{
+  color:var(--muted);
+  font-size:13px;
+  font-weight:600;
+}
+
+.pagination-controls{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+
+.page-btn{
+  min-width:36px;
+  height:36px;
+  padding:0 11px;
+  border:1px solid var(--line);
+  border-radius:7px;
+  background:var(--white);
+  color:#34455a;
+  font:600 13px Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,sans-serif;
+  cursor:pointer;
+  transition:all .15s ease;
+}
+
+.page-btn:hover:not(:disabled){
+  border-color:var(--gold);
+  color:var(--gold);
+  background:#fffdf8;
+}
+
+.page-btn.active{
+  background:var(--navy);
+  border-color:var(--navy);
+  color:#fff;
+}
+
+.page-btn:disabled{
+  opacity:.45;
+  cursor:not-allowed;
+}
+
+@media(max-width:600px){
+  .pagination{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .pagination-info{
+    text-align:center;
+  }
+
+  .pagination-controls{
+    justify-content:center;
+    flex-wrap:wrap;
+  }
+
+  .page-btn{
+    min-width:34px;
+  }
+}
