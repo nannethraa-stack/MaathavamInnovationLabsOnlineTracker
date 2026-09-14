@@ -24,19 +24,110 @@
 </main>
 <footer>Maathavam Innovation Labs · Deep-Tech Concept Portfolio · SQLite</footer>
 <script>
+const PAGE_SIZE = 10;
+let currentPage = 1;
+
+function getProjectRows() {
+  return Array.from(document.querySelectorAll('#projectTable tbody tr.data-row'));
+}
+
+function renderPagination() {
+  const pagination = document.getElementById('pagination');
+  if (!pagination) return;
+
+  const rows = getProjectRows();
+  const q = (document.getElementById('search')?.value || '').trim().toLowerCase();
+  const filtered = rows.filter(r => !q || r.innerText.toLowerCase().includes(q));
+
+  const total = filtered.length;
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  if (currentPage > totalPages) {
+    currentPage = totalPages;
+  }
+
+  rows.forEach(r => {
+    r.style.display = 'none';
+  });
+
+  const start = (currentPage - 1) * PAGE_SIZE;
+  const pageRows = filtered.slice(start, start + PAGE_SIZE);
+
+  pageRows.forEach(r => {
+    r.style.display = '';
+  });
+
+  if (!total) {
+    pagination.innerHTML =
+      '<span class="pagination-info">No matching concepts</span>';
+    return;
+  }
+
+  const from = start + 1;
+  const to = Math.min(start + PAGE_SIZE, total);
+
+  let html =
+    `<span class="pagination-info">Showing ${from}–${to} of ${total} concepts</span>`;
+
+  html += '<div class="pagination-controls">';
+
+  html += `
+    <button class="page-btn"
+            ${currentPage === 1 ? 'disabled' : ''}
+            onclick="goToPage(${currentPage - 1})">
+      Previous
+    </button>`;
+
+  for (let i = 1; i <= totalPages; i++) {
+    html += `
+      <button class="page-btn ${i === currentPage ? 'active' : ''}"
+              onclick="goToPage(${i})">
+        ${i}
+      </button>`;
+  }
+
+  html += `
+    <button class="page-btn"
+            ${currentPage === totalPages ? 'disabled' : ''}
+            onclick="goToPage(${currentPage + 1})">
+      Next
+    </button>`;
+
+  html += '</div>';
+
+  pagination.innerHTML = html;
+}
+
+function goToPage(page) {
+  currentPage = page;
+  renderPagination();
+
+  document.getElementById('projectTable')?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  });
+}
+
 function filterRows() {
-  const q=(document.getElementById('search')?.value || '').toLowerCase();
-  document.querySelectorAll('#projectTable tbody tr.data-row').forEach(r=>{r.style.display=r.innerText.toLowerCase().includes(q)?'':'none';});
+  currentPage = 1;
+  renderPagination();
 }
+
 function sortProjects(direction) {
-  const url=new URL(window.location.href);
-  url.searchParams.set('sort','project'); url.searchParams.set('direction',direction);
-  window.location.href=url.toString();
+  const url = new URL(window.location.href);
+  url.searchParams.set('sort', 'project');
+  url.searchParams.set('direction', direction);
+  window.location.href = url.toString();
 }
+
 function sortPriority(direction) {
-  const url=new URL(window.location.href);
-  url.searchParams.set('sort','priority'); url.searchParams.set('direction',direction);
-  window.location.href=url.toString();
+  const url = new URL(window.location.href);
+  url.searchParams.set('sort', 'priority');
+  url.searchParams.set('direction', direction);
+  window.location.href = url.toString();
 }
+
+document.addEventListener('DOMContentLoaded', renderPagination);
 </script>
-</body></html>
+</body>
+</html>
