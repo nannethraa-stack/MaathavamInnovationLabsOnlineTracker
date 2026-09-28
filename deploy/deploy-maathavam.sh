@@ -104,6 +104,7 @@ sudo "$APP/.venv/bin/pip" install -r "$APP/requirements.txt" --quiet
 
 
 echo "[6/10] Running database migrations..."
+cd "$APP"
 sudo "$APP/.venv/bin/python" -c "from app import init_db; init_db()"
 
 echo "[7/10] Restarting application..."
