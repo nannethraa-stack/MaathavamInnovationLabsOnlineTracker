@@ -50,9 +50,41 @@
   </form>
   <div class="timeline">
   {% for c in comments %}
-    <div class="timeline-item"><strong>{{ c['created_at']|replace('T',' ') }} UTC</strong><p>{{ c['comment'] }}</p></div>
-  {% else %}<div class="empty">No comments yet.</div>{% endfor %}
+    <div class="timeline-item">
+      <div class="comment-meta">
+        <strong>{{ c['created_at']|replace('T',' ') }} UTC</strong>
+        {% if c['updated_at'] %}
+          <span>Edited: {{ c['updated_at']|replace('T',' ') }} UTC</span>
+        {% endif %}
+      </div>
+      <div id="comment-view-{{ c['id'] }}">
+        <p>{{ c['comment'] }}</p>
+        <button type="button" class="btn" onclick="editComment({{ c['id'] }})">Edit</button>
+      </div>
+      <form method="post" id="comment-edit-{{ c['id'] }}" style="display:none;">
+        <input type="hidden" name="action" value="edit_comment">
+        <input type="hidden" name="comment_id" value="{{ c['id'] }}">
+        <textarea name="comment" required>{{ c['comment'] }}</textarea>
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Save</button>
+          <button type="button" class="btn" onclick="cancelEdit({{ c['id'] }})">Cancel</button>
+        </div>
+      </form>
+    </div>
+  {% else %}
+    <div class="empty">No comments yet.</div>
+  {% endfor %}
   </div>
+<script>
+function editComment(id) {
+  document.getElementById("comment-view-" + id).style.display = "none";
+  document.getElementById("comment-edit-" + id).style.display = "block";
+}
+function cancelEdit(id) {
+  document.getElementById("comment-edit-" + id).style.display = "none";
+  document.getElementById("comment-view-" + id).style.display = "block";
+}
+</script>
 </section>
 </div>
 

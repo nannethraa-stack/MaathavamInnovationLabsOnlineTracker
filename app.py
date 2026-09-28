@@ -117,6 +117,9 @@ def init_db():
     );
     """)
     # Backfill/migrate older databases safely.
+    comment_columns = {row[1] for row in conn.execute("PRAGMA table_info(comments)").fetchall()}
+    if "updated_at" not in comment_columns:
+        conn.execute("ALTER TABLE comments ADD COLUMN updated_at TEXT")
     project_columns = {row[1] for row in conn.execute("PRAGMA table_info(projects)").fetchall()}
     if "priority" not in project_columns:
         conn.execute("ALTER TABLE projects ADD COLUMN priority TEXT NOT NULL DEFAULT 'No'")
@@ -431,6 +434,30 @@ def project(project_id):
                 conn.commit()
                 flash("Comment added.")
 
+        elif action == "edit_comment":
+            comment_id = int(request.form.get("comment_id", "0") or 0)
+            text = request.form.get("comment", "").strip()
+            if not text:
+                flash("Comment cannot be empty.")
+            else:
+                existing = conn.execute(
+                    "SELECT id FROM comments WHERE id=? AND project_id=?",
+                    (comment_id, project_id),
+                ).fetchone()
+                if not existing:
+                    conn.close()
+                    return "Comment not found", 404
+                conn.execute(
+                    "UPDATE comments SET comment=?, updated_at=? WHERE id=? AND project_id=?",
+                    (text, ts, comment_id, project_id),
+                )
+                conn.execute(
+                    "UPDATE projects SET comments=?, updated_at=? WHERE id=?",
+                    (text, ts, project_id),
+                )
+                audit(conn, "UPDATE", "comment", comment_id, text[:200])
+                conn.commit()
+                flash("Comment updated.")
         elif action == "add_spend":
             amount = float(request.form.get("amount", "0") or 0)
             description = request.form.get("spend_description", "").strip()
@@ -484,11 +511,11 @@ def project(project_id):
         return redirect(url_for("project", project_id=project_id))
 
     artifacts = conn.execute(
-        "SELECT * FROM artifacts WHERE project_id=? ORDER BY created_at DESC",
+        "SELECT * FROM artifacts WHERE project_id=? ORDER BY COALESCE(updated_at, created_at) DESC",
         (project_id,),
     ).fetchall()
     comments = conn.execute(
-        "SELECT * FROM comments WHERE project_id=? ORDER BY created_at DESC",
+        "SELECT * FROM comments WHERE project_id=? ORDER BY COALESCE(updated_at, created_at) DESC",
         (project_id,),
     ).fetchall()
     spend = conn.execute(
