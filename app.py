@@ -125,7 +125,7 @@ def init_db():
         conn.execute("ALTER TABLE projects ADD COLUMN priority TEXT NOT NULL DEFAULT 'No'")
 
     columns = {row[1] for row in conn.execute("PRAGMA table_info(artifacts)").fetchall()}
-    for column, definition in (("original_path", "TEXT"), ("file_size", "INTEGER NOT NULL DEFAULT 0"), ("sha256", "TEXT")):
+    for column, definition in (("original_path", "TEXT"), ("file_size", "INTEGER NOT NULL DEFAULT 0"), ("sha256", "TEXT"), ("updated_at", "TEXT")):
         if column not in columns:
             conn.execute(f"ALTER TABLE artifacts ADD COLUMN {column} {definition}")
     conn.execute("DELETE FROM projects WHERE id NOT IN (SELECT MIN(id) FROM projects GROUP BY lower(project_name))")
