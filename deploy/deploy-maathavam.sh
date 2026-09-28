@@ -32,16 +32,16 @@ cd "$REPO"
 
 echo "[1/10] Getting latest code from GitHub..."
 
-git fetch origin
+sudo -u ubuntu git fetch origin
 
-git checkout main
-git pull --ff-only origin main
-if [ -n "$(git status --porcelain)" ]; then echo "ERROR: Deployment checkout has uncommitted changes. Aborting."; git status --short; exit 1; fi
-
-
+sudo -u ubuntu git checkout main
+sudo -u ubuntu git pull --ff-only origin main
+if [ -n "$(sudo -u ubuntu git status --porcelain)" ]; then echo "ERROR: Deployment checkout has uncommitted changes. Aborting."; sudo -u ubuntu git status --short; exit 1; fi
 
 
-COMMIT="$(git rev-parse --short HEAD)"
+
+
+COMMIT="$(sudo -u ubuntu git rev-parse --short HEAD)"
 
 echo "Deploying commit: $COMMIT"
 
