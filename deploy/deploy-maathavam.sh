@@ -72,21 +72,13 @@ fi
 echo "[3/10] Deploying application code..."
 
 sudo rsync -a \
-
     --exclude='.git/' \
-
     --exclude='.venv/' \
-
     --exclude='project_dashboard.db' \
-
     --exclude='project_dashboard.db.*' \
-
     --exclude='uploads/' \
-
     --exclude='deploy_backup_*/' \
-
     --exclude='__pycache__/' \
-
     "$REPO/" "$APP/"
 
 
